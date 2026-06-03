@@ -9,6 +9,13 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import java.util.concurrent.TimeUnit
 
 /**
  * Short-lived foreground service that performs the category POST. Started from
@@ -30,9 +37,11 @@ class CategoryPostService : Service() {
 
         Thread {
             try {
-                HttpClient.postCategory(txnId, category, timestamp)
+                val ok = HttpClient.postCategory(txnId, category, timestamp)
+                if (!ok) enqueueRetry(txnId, category, timestamp)
             } catch (t: Throwable) {
                 Log.e(HttpClient.TAG, "service post crashed: ${t.message}")
+                enqueueRetry(txnId, category, timestamp)
             } finally {
                 stopForegroundCompat()
                 stopSelf(startId)
@@ -73,6 +82,26 @@ class CategoryPostService : Service() {
                 setShowBadge(false)
             }
         )
+    }
+
+    private fun enqueueRetry(txnId: String?, category: String, timestamp: Long) {
+        try {
+            val work = OneTimeWorkRequestBuilder<CategoryPostWorker>()
+                .setInputData(workDataOf(
+                    Cat.EX_TXN to txnId,
+                    Cat.EX_CATEGORY to category,
+                    Cat.EX_TS to timestamp
+                ))
+                .setConstraints(
+                    Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+                )
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .build()
+            WorkManager.getInstance(applicationContext).enqueue(work)
+            Log.i(HttpClient.TAG, "category queued for retry txn=$txnId")
+        } catch (t: Throwable) {
+            Log.e(HttpClient.TAG, "enqueueRetry failed: ${t.message}")
+        }
     }
 
     companion object {

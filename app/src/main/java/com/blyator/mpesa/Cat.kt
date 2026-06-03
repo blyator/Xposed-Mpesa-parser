@@ -10,18 +10,19 @@ package com.blyator.mpesa
 object Cat {
     const val PKG = "com.blyator.mpesa"
 
-    // Host post the categorize notification
     const val ACTION_SHOW = "com.blyator.mpesa.action.SHOW_CATEGORIES"
-    // Notification button "user picked a category
     const val ACTION_PICK = "com.blyator.mpesa.action.PICK_CATEGORY"
+    // Host fires this when n8n POST exhausts retries; QueueReceiver enqueues WorkManager job
+    const val ACTION_QUEUE_TXN = "com.blyator.mpesa.action.QUEUE_TXN"
 
-    // Extras
+    // Extras (also used as WorkManager input data keys)
     const val EX_TXN = "txnId"
     const val EX_AMOUNT = "amount"
     const val EX_NAME = "name"
     const val EX_TS = "timestamp"
     const val EX_CATEGORY = "category"
     const val EX_NOTIF_ID = "notifId"
+    const val WK_PAYLOAD = "payload"   // serialized txn JSON for TxnPostWorker
 
     // channel importance is locked at creation. DEFAULT (silenced) is used
     // so the status-bar icon actually shows — LOW gets its top-bar icon suppressed

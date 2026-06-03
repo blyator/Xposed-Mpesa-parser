@@ -49,6 +49,15 @@
             android:name=".CategoryActionReceiver"
             android:exported="false" />
 
+        <!-- Woken by host process when n8n POST fails offline; enqueues WorkManager retry. -->
+        <receiver
+            android:name=".QueueReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.blyator.mpesa.action.QUEUE_TXN" />
+            </intent-filter>
+        </receiver>
+
         <!-- Foreground service that does the category POST with network access
              even when the app's background process is otherwise restricted. -->
         <service

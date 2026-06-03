@@ -1,5 +1,6 @@
 package com.blyator.mpesa
 
+import android.content.Intent
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -42,9 +43,26 @@ object N8nClient {
                     return@execute
                 }
             }
-            Log.e(SMSHook.TAG, "n8n POST gave up after $MAX_RETRIES attempts")
+            Log.e(SMSHook.TAG, "n8n POST gave up after $MAX_RETRIES attempts — queuing for retry")
+            queueForRetry(payload)
         }
     }
+
+    private fun queueForRetry(payload: String) {
+        try {
+            val ctx = android.app.AndroidAppHelper.currentApplication() ?: return
+            val intent = Intent(Cat.ACTION_QUEUE_TXN).apply {
+                setPackage(Cat.PKG)
+                putExtra(Cat.WK_PAYLOAD, payload)
+            }
+            ctx.sendBroadcast(intent)
+        } catch (t: Throwable) {
+            Log.e(SMSHook.TAG, "queueForRetry broadcast failed: ${t.message}")
+        }
+    }
+
+    /** Single attempt — used by TxnPostWorker (WorkManager handles its own retry). */
+    internal fun postOnce(payload: String): Boolean = post(payload, 1)
 
     private fun post(payload: String, attempt: Int): Boolean {
         return try {
