@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="xposed_scope">
+        <item>android</item>                              <!-- system_server / telephony -->
+        <item>com.android.phone</item>                    <!-- phone/telephony stack -->
+        <item>com.google.android.apps.messaging</item>    <!-- Google Messages -->
+        <item>com.android.messaging</item>                <!-- AOSP Messaging -->
+        <item>com.samsung.android.messaging</item>        <!-- Samsung Messages -->
+    </string-array>
+</resources>
