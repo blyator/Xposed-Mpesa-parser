@@ -18,12 +18,15 @@ object SMSHook {
 
     const val TAG = "MPESA"
 
+    // Only SMS_DELIVER: it is delivered exactly ONCE, to the default SMS app's
+    // main process. SMS_RECEIVED, by contrast, fans out to every app holding the
+    // permission (and to side processes like :rcs), causing duplicate POSTs that
+    // per-process dedup cannot catch. DELIVER alone = one capture per message.
     private val SMS_ACTIONS = setOf(
-        Telephony.Sms.Intents.SMS_RECEIVED_ACTION,   // android.provider.Telephony.SMS_RECEIVED
-        Telephony.Sms.Intents.SMS_DELIVER_ACTION     // default SMS app
+        Telephony.Sms.Intents.SMS_DELIVER_ACTION     // default SMS app, single delivery
     )
 
-    // Dedup guard: the same SMS can arrive via SMS_RECEIVED and SMS_DELIVER.
+    // Dedup guard: belt-and-suspenders within a single process.
     private val recentHashes = object : LinkedHashMap<Int, Long>(64, 0.75f, false) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Long>?): Boolean = size > 64
     }
@@ -106,7 +109,7 @@ object SMSHook {
         }
         if (body.isBlank()) return
 
-        if (!isMpesa(sender, body)) return
+        if (!isMpesa(sender)) return
 
         // Dedup
         val hash = (sender + "|" + body).hashCode()
@@ -124,17 +127,21 @@ object SMSHook {
         XposedBridge.log("[MPESA] captured from=$sender")
 
         val parsed = MPesaParser.parse(body, sender, timestamp)
+        // Always log the full ledger (in + out) to n8n.
         N8nClient.send(parsed)
+        // Only outgoing spends get the categorize notification; received money
+        // (receive/deposit/reversal) is recorded but not categorized.
+        if (parsed.direction == "out") {
+            CategoryNotifier.trigger(parsed)
+        } else {
+            Log.i(TAG, "incoming (${parsed.type}) — logged, no notification")
+        }
     }
 
-    private fun isMpesa(sender: String, body: String): Boolean {
-        val s = sender.uppercase()
-        if (s.contains("MPESA") || s.contains("M-PESA") || s.contains("SAFARICOM")) return true
-        // Fallback: body shape. M-PESA confirmations start with a TXN code then keywords.
-        val b = body.uppercase()
-        return b.contains("M-PESA") || b.contains("MPESA") ||
-            (Regex("^[A-Z0-9]{10}\\b").containsMatchIn(body) &&
-                (b.contains("KSH") || b.contains("KES")) &&
-                (b.contains("CONFIRMED") || b.contains("BALANCE")))
+    // only the M-PESA sender ID. Safaricom marketing/airtime SMS come from
+    // other sender IDs ("Safaricom", "SAFARICOM", shortcodes) and must be ignored.
+    private fun isMpesa(sender: String): Boolean {
+        val s = sender.trim().uppercase()
+        return s == "MPESA" || s == "M-PESA"
     }
 }

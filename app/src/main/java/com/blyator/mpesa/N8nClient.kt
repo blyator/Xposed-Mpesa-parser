@@ -17,7 +17,7 @@ import javax.net.ssl.X509TrustManager
  */
 object N8nClient {
 
-    private const val WEBHOOK_URL = "https://remotelab.qzz.io/webhook/mpesa"
+    private const val WEBHOOK_URL = "webhook url here" // insert server url
     private const val MAX_RETRIES = 3
 
     private val JSON = "application/json; charset=utf-8".toMediaType()
@@ -73,6 +73,7 @@ object N8nClient {
         o.putOpt("amount", t.amount)
         o.put("currency", t.currency)
         o.put("type", t.type)
+        o.put("direction", t.direction)
         o.putOpt("phone", t.phone)
         o.putOpt("name", t.name)
         o.putOpt("balance", t.balance)

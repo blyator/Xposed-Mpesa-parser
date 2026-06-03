@@ -7,6 +7,7 @@ data class MpesaTxn(
     val amount: Double?,
     val currency: String,
     val type: String,
+    val direction: String,   // "out" = spend, "in" = money received
     val phone: String?,
     val name: String?,
     val balance: Double?,
@@ -50,6 +51,7 @@ object MPesaParser {
             amount = amount,
             currency = "KES",
             type = type,
+            direction = directionOf(type),
             phone = phone,
             name = name,
             balance = balance,
@@ -59,18 +61,36 @@ object MPesaParser {
         )
     }
 
+    // Maps a transaction type to spend direction. Unknown defaults to "out" so a
+    // genuine spend is never silently dropped from categorization.
+    private fun directionOf(type: String): String = when (type) {
+        "receive", "deposit", "reversal" -> "in"
+        else -> "out"   // send, withdraw, paybill, buygoods, airtime, fuliza, unknown
+    }
+
     private fun classify(body: String): String {
+        // Drop M-PESA's trailing marketing taglines ("Buy goods with M-PESA.",
+        // "Download My OneApp...") so promo wording never drives classification.
         val b = body.lowercase()
+            .substringBefore("buy goods with m-pesa")
+            .substringBefore("download")
+            .substringBefore("dial *")
+
         return when {
-            b.contains("withdraw") -> "withdraw"
-            b.contains("deposit") -> "deposit"
-            b.contains("airtime") -> "airtime"
-            b.contains("paid to") || b.contains("pay bill") || b.contains("paybill") -> "paybill"
-            b.contains("bought") || b.contains("buy goods") || b.contains("till") -> "buygoods"
+            // Directional verbs first — they describe the actual transaction and
+            // must win over noun-based matches elsewhere in the text.
             b.contains("you have received") || b.contains("you received") -> "receive"
             b.contains("sent to") || b.contains("you have sent") || b.contains("you sent") -> "send"
+            b.contains("withdraw") -> "withdraw"
+            b.contains("give") && b.contains("deposit") -> "deposit"
+            b.contains("airtime") -> "airtime"
+            // Paybill carries an account number; buy-goods/till does not.
+            b.contains("pay bill") || b.contains("paybill") ||
+                (b.contains("paid to") && b.contains("account")) -> "paybill"
+            b.contains("paid to") || b.contains("bought goods") || b.contains("till") -> "buygoods"
             b.contains("reversal") || b.contains("reversed") -> "reversal"
             b.contains("fuliza") -> "fuliza"
+            b.contains("deposit") -> "deposit"
             else -> "unknown"
         }
     }

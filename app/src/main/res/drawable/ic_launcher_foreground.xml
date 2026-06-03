@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Xposed/LSPosed-style framework mark: hexagon ring + downward chevron.
+         Kept inside the 72x72 adaptive safe zone (center 54, ~26..82). -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M54,26 L78,40 L78,68 L54,82 L30,68 L30,40 Z M54,33 L72,43.5 L72,64.5 L54,75 L36,64.5 L36,43.5 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34.7,41.4 L42.3,36.9 L54,54 L65.7,36.9 L73.3,41.4 L54,69.3 Z" />
+</vector>

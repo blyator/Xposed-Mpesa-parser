@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:label="M-PESA Interceptor"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:allowBackup="false"
         android:supportsRtl="true">
 
@@ -24,6 +29,23 @@
         <meta-data
             android:name="xposedscope"
             android:resource="@array/xposed_scope" />
+
+        <!-- Woken by the SMS hook (host process) to post the categorize
+             notification AS THIS app. Exported so the host broadcast reaches it. -->
+        <receiver
+            android:name=".ShowCategoryReceiver"
+            android:exported="true">
+            <!-- intent-filter grants the host app package visibility of u
+                 (Android 11+ AppsFilter), so its broadcast actually resolves. -->
+            <intent-filter>
+                <action android:name="com.blyator.mpesa.action.SHOW_CATEGORIES" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Category button taps. Not exported — only our own PendingIntents. -->
+        <receiver
+            android:name=".CategoryActionReceiver"
+            android:exported="false" />
 
     </application>
 

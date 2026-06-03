@@ -1,0 +1,96 @@
+package com.blyator.mpesa
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.util.Log
+import android.widget.RemoteViews
+
+/**
+ * Builds and posts the "categorize this transaction" notification with a custom
+ * RemoteViews layout (standard notifications cap at 3 action buttons; we want 4,
+ * so a custom view is required). Each button fires a broadcast to
+ * CategoryActionReceiver in THIS app, which POSTs the category and self-cancels.
+ */
+object NotificationHelper {
+
+    fun show(ctx: Context, txnId: String?, amount: Double, name: String, timestamp: Long) {
+        try {
+            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            ensureChannel(nm)
+
+            val notifId = Cat.notifId(txnId, timestamp)
+
+            val rv = RemoteViews(ctx.packageName, R.layout.notification_categories)
+            val amountTxt = if (amount > 0) "Ksh%,.2f".format(amount) else "M-PESA"
+            rv.setTextViewText(R.id.notif_title, "$amountTxt · $name")
+
+            // Wire each button to a unique PendingIntent broadcast.
+            for (c in Cat.CATEGORIES) {
+                val viewId = ctx.resources.getIdentifier(c.viewId, "id", ctx.packageName)
+                if (viewId == 0) continue
+                rv.setTextViewText(viewId, c.label)
+                rv.setOnClickPendingIntent(viewId, pickIntent(ctx, txnId, c.value, timestamp, notifId))
+            }
+
+            val builder = android.app.Notification.Builder(ctx, Cat.CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_stat_mpesa)
+                .setContentTitle("$amountTxt · $name")
+                .setStyle(android.app.Notification.DecoratedCustomViewStyle())
+                .setCustomContentView(rv)
+                .setCustomBigContentView(rv)
+                .setVisibility(android.app.Notification.VISIBILITY_PUBLIC)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                // Pre-O: DEFAULT priority shows the status-bar icon
+                @Suppress("DEPRECATION")
+                builder.setPriority(android.app.Notification.PRIORITY_DEFAULT)
+            }
+
+            nm.notify(notifId, builder.build())
+            Log.i(HttpClient.TAG, "notification posted id=$notifId txn=$txnId")
+        } catch (t: Throwable) {
+            Log.e(HttpClient.TAG, "show() failed: ${t.message}")
+        }
+    }
+
+    private fun pickIntent(
+        ctx: Context, txnId: String?, category: String, timestamp: Long, notifId: Int
+    ): PendingIntent {
+        val intent = Intent(Cat.ACTION_PICK).apply {
+            setClassName(Cat.PKG, "${Cat.PKG}.CategoryActionReceiver")
+            setPackage(Cat.PKG)
+            putExtra(Cat.EX_TXN, txnId)
+            putExtra(Cat.EX_CATEGORY, category)
+            putExtra(Cat.EX_TS, timestamp)
+            putExtra(Cat.EX_NOTIF_ID, notifId)
+        }
+        // requestCode unique per (txn, category) so extras don't collide.
+        val reqCode = (txnId + "|" + category).hashCode()
+        return PendingIntent.getBroadcast(
+            ctx, reqCode, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+    }
+
+    private fun ensureChannel(nm: NotificationManager) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        if (nm.getNotificationChannel(Cat.CHANNEL_ID) != null) return
+        val ch = NotificationChannel(
+            // DEFAULT keeps the status-bar icon visible (LOW gets it hidden on some
+            Cat.CHANNEL_ID, Cat.CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "M-PESA transaction categorization"
+            setShowBadge(true)
+            setSound(null, null)
+            enableVibration(false)
+            enableLights(false)
+        }
+        nm.createNotificationChannel(ch)
+    }
+}
