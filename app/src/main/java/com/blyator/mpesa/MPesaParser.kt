@@ -65,6 +65,7 @@ object MPesaParser {
     // genuine spend is never silently dropped from categorization.
     private fun directionOf(type: String): String = when (type) {
         "receive", "deposit", "reversal" -> "in"
+        "failed" -> "none"
         else -> "out"   // send, withdraw, paybill, buygoods, airtime, fuliza, unknown
     }
 
@@ -77,8 +78,9 @@ object MPesaParser {
             .substringBefore("dial *")
 
         return when {
-            // Directional verbs first — they describe the actual transaction and
-            // must win over noun-based matches elsewhere in the text.
+            // Failure notifications first — must never be classified as real txns.
+            b.startsWith("failed") || b.contains("insufficient funds") -> "failed"
+            // Directional verbs — describe the actual transaction, win over noun matches.
             b.contains("you have received") || b.contains("you received") -> "receive"
             b.contains("sent to") || b.contains("you have sent") || b.contains("you sent") -> "send"
             b.contains("withdraw") -> "withdraw"

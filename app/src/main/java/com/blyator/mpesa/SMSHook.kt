@@ -127,14 +127,17 @@ object SMSHook {
         XposedBridge.log("[MPESA] captured from=$sender")
 
         val parsed = MPesaParser.parse(body, sender, timestamp)
+        if (parsed.type == "failed") {
+            Log.i(TAG, "failure notification — skipped")
+            return
+        }
         // Always log the full ledger (in + out) to n8n.
         N8nClient.send(parsed)
-        // Only outgoing spends get the categorize notification; received money
-        // (receive/deposit/reversal) is recorded but not categorized.
-        if (parsed.direction == "out") {
+        // Only outgoing spends with a real amount get the categorize notification.
+        if (parsed.direction == "out" && (parsed.amount ?: 0.0) > 0.0) {
             CategoryNotifier.trigger(parsed)
         } else {
-            Log.i(TAG, "incoming (${parsed.type}) — logged, no notification")
+            Log.i(TAG, "no notification: direction=${parsed.direction} amount=${parsed.amount} type=${parsed.type}")
         }
     }
 
