@@ -28,16 +28,19 @@ class CategoryActionReceiver : BroadcastReceiver() {
             Log.w(HttpClient.TAG, "cancel failed: ${t.message}")
         }
 
-        // Network on a background thread; goAsync keeps the receiver alive for it.
-        val pending = goAsync()
-        Thread {
-            try {
-                HttpClient.postCategory(txnId, category, timestamp)
-            } catch (t: Throwable) {
-                Log.e(HttpClient.TAG, "postCategory crashed: ${t.message}")
-            } finally {
-                pending.finish()
-            }
-        }.apply { isDaemon = true }.start()
+        // Don't POST from this receiver: our app's background process is network-
+        // restricted (RESTRICTED
+        // grants a brief allowlist that lets us start a foreground service, which gets
+        // network even from a restricted app. The service does the actual POST.
+        val svc = Intent(context, CategoryPostService::class.java).apply {
+            putExtra(Cat.EX_TXN, txnId)
+            putExtra(Cat.EX_CATEGORY, category)
+            putExtra(Cat.EX_TS, timestamp)
+        }
+        try {
+            context.startForegroundService(svc)
+        } catch (t: Throwable) {
+            Log.e(HttpClient.TAG, "startForegroundService failed: ${t.message}")
+        }
     }
 }
