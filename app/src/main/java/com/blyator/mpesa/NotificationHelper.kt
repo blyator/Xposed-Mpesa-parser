@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import android.widget.RemoteViews
+import androidx.core.app.NotificationCompat
 
 /**
  * Builds and posts the "categorize this transaction" notification with a custom
@@ -36,21 +37,19 @@ object NotificationHelper {
                 rv.setOnClickPendingIntent(viewId, pickIntent(ctx, txnId, c.value, timestamp, notifId))
             }
 
-            val builder = android.app.Notification.Builder(ctx, Cat.CHANNEL_ID)
+            val builder = NotificationCompat.Builder(ctx, Cat.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_mpesa)
                 .setContentTitle("$amountTxt · $name")
-                .setStyle(android.app.Notification.DecoratedCustomViewStyle())
+                .setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(rv)
                 .setCustomBigContentView(rv)
-                .setVisibility(android.app.Notification.VISIBILITY_PUBLIC)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
-
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                // Pre-O: DEFAULT priority shows the status-bar icon
-                @Suppress("DEPRECATION")
-                builder.setPriority(android.app.Notification.PRIORITY_DEFAULT)
-            }
+                // DEFAULT priority keeps the status-bar icon; setSilent kills sound +
+                // vibration regardless of the channel (NotificationCompat, API 24+).
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setSilent(true)
 
             nm.notify(notifId, builder.build())
             Log.i(HttpClient.TAG, "notification posted id=$notifId txn=$txnId")
