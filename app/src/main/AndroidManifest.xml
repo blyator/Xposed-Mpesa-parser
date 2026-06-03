@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:label="M-PESA Interceptor"
+        android:label="MPESA Tracker"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:allowBackup="false"
@@ -18,7 +18,7 @@
 
         <meta-data
             android:name="xposeddescription"
-            android:value="Intercepts M-PESA SMS, parses txn data, posts to n8n webhook." />
+            android:value="Tracks M-PESA SMS, parses txn data, posts to n8n webhook." />
 
         <!-- Minimum Xposed API version (82 = stable LSPosed) -->
         <meta-data
