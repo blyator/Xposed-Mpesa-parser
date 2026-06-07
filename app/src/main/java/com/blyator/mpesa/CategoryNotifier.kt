@@ -16,6 +16,8 @@ object CategoryNotifier {
 
     fun trigger(txn: MpesaTxn) {
         try {
+            // Incoming money needs no spend category — just gets recorded with direction="in".
+            if (txn.direction == "in") return
             val ctx: Context = android.app.AndroidAppHelper.currentApplication() ?: return
             // Send by ACTION (not explicit class) + setPackage: this resolves via
             // ShowCategoryReceiver's intent-filter, which grants the host visibility
