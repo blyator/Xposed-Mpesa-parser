@@ -39,6 +39,10 @@ object Cat {
         Category("btn_food", "🥗 Food", "food"),
         Category("btn_transport", "🚗 Transport", "transport"),
         Category("btn_entertainment", "🎬 Fun", "entertainment"),
+        Category("btn_bills", "🧾 Bills", "bills"),
+        Category("btn_bundles", "📶 Bundles", "bundles"),
+        Category("btn_transfer", "👤 Transfer", "transfer"),
+        Category("btn_savings", "🏦 Savings", "savings"),
         Category("btn_other", "💸 Other", "other"),
     )
 

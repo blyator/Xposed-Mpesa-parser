@@ -19,14 +19,35 @@
         android:layout_marginTop="8dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
-        <TextView android:id="@+id/btn_food" style="@style/CatBtn" android:text="🥗 Food" />
-        <TextView style="@style/CatSpacer" />
-        <TextView android:id="@+id/btn_transport" style="@style/CatBtn" android:text="🚗 Transport" />
-        <TextView style="@style/CatSpacer" />
-        <TextView android:id="@+id/btn_entertainment" style="@style/CatBtn" android:text="🎬 Fun" />
-        <TextView style="@style/CatSpacer" />
-        <TextView android:id="@+id/btn_other" style="@style/CatBtn" android:text="💸 Other" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView android:id="@+id/btn_food" style="@style/CatBtn" android:text="🥗 Food" />
+            <TextView style="@style/CatSpacer" />
+            <TextView android:id="@+id/btn_transport" style="@style/CatBtn" android:text="🚗 Transport" />
+            <TextView style="@style/CatSpacer" />
+            <TextView android:id="@+id/btn_entertainment" style="@style/CatBtn" android:text="🎬 Fun" />
+            <TextView style="@style/CatSpacer" />
+            <TextView android:id="@+id/btn_bills" style="@style/CatBtn" android:text="🧾 Bills" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_marginTop="6dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView android:id="@+id/btn_bundles" style="@style/CatBtn" android:text="📶 Bundles" />
+            <TextView style="@style/CatSpacer" />
+            <TextView android:id="@+id/btn_transfer" style="@style/CatBtn" android:text="👤 Transfer" />
+            <TextView style="@style/CatSpacer" />
+            <TextView android:id="@+id/btn_savings" style="@style/CatBtn" android:text="🏦 Savings" />
+            <TextView style="@style/CatSpacer" />
+            <TextView android:id="@+id/btn_other" style="@style/CatBtn" android:text="💸 Other" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>
