@@ -18,7 +18,10 @@ import androidx.core.app.NotificationCompat
  */
 object NotificationHelper {
 
-    fun show(ctx: Context, txnId: String?, amount: Double, name: String, timestamp: Long) {
+    fun show(
+        ctx: Context, txnId: String?, amount: Double, name: String, timestamp: Long,
+        suggested: String? = null
+    ) {
         try {
             val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             ensureChannel(nm)
@@ -27,19 +30,23 @@ object NotificationHelper {
 
             val rv = RemoteViews(ctx.packageName, R.layout.notification_categories)
             val amountTxt = if (amount > 0) "Ksh%,.2f".format(amount) else "M-PESA"
-            rv.setTextViewText(R.id.notif_title, "$amountTxt · $name")
+            val titleTxt = if (suggested != null) "✓ $amountTxt · $name (auto)" else "$amountTxt · $name"
+            rv.setTextViewText(R.id.notif_title, titleTxt)
 
-            // Wire each button to a unique PendingIntent broadcast.
+            // Wire each button to a unique PendingIntent broadcast. The suggested
+            // category (already auto-posted) gets a checkmark; tapping any button,
+            // including a different one, still works and overrides the auto pick.
             for (c in Cat.CATEGORIES) {
                 val viewId = ctx.resources.getIdentifier(c.viewId, "id", ctx.packageName)
                 if (viewId == 0) continue
-                rv.setTextViewText(viewId, c.label)
+                val label = if (c.value == suggested) "✓ ${c.label}" else c.label
+                rv.setTextViewText(viewId, label)
                 rv.setOnClickPendingIntent(viewId, pickIntent(ctx, txnId, c.value, timestamp, notifId))
             }
 
             val builder = NotificationCompat.Builder(ctx, Cat.CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_mpesa)
-                .setContentTitle("$amountTxt · $name")
+                .setContentTitle(titleTxt)
                 .setStyle(NotificationCompat.DecoratedCustomViewStyle())
                 .setCustomContentView(rv)
                 .setCustomBigContentView(rv)

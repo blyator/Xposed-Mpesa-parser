@@ -18,9 +18,29 @@ class ShowCategoryReceiver : BroadcastReceiver() {
             val amount = intent.getDoubleExtra(Cat.EX_AMOUNT, 0.0)
             val name = intent.getStringExtra(Cat.EX_NAME) ?: "M-PESA"
             val ts = intent.getLongExtra(Cat.EX_TS, System.currentTimeMillis())
-            NotificationHelper.show(context.applicationContext, txnId, amount, name, ts)
+            val ctx = context.applicationContext
+
+            val suggested = Suggester.suggest(name)
+            if (suggested != null) autoPost(ctx, txnId, suggested, ts)
+
+            NotificationHelper.show(ctx, txnId, amount, name, ts, suggested)
         } catch (t: Throwable) {
             Log.e(HttpClient.TAG, "ShowCategoryReceiver error: ${t.message}")
+        }
+    }
+
+    // High-confidence merchant match: post the category right away, same path as
+    // a manual button tap. Notification still shows so the user can override.
+    private fun autoPost(ctx: Context, txnId: String?, category: String, ts: Long) {
+        val svc = Intent(ctx, CategoryPostService::class.java).apply {
+            putExtra(Cat.EX_TXN, txnId)
+            putExtra(Cat.EX_CATEGORY, category)
+            putExtra(Cat.EX_TS, ts)
+        }
+        try {
+            ctx.startForegroundService(svc)
+        } catch (t: Throwable) {
+            Log.e(HttpClient.TAG, "autoPost startForegroundService failed: ${t.message}")
         }
     }
 }
