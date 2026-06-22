@@ -84,7 +84,9 @@ object MPesaParser {
             b.contains("you have received") || b.contains("you received") -> "receive"
             b.contains("sent to") || b.contains("you have sent") || b.contains("you sent") -> "send"
             b.contains("withdraw") -> "withdraw"
-            b.contains("give") && b.contains("deposit") -> "deposit"
+            // Agent deposit:  balance goes up, money in.
+            (b.contains("give") && b.contains("deposit")) ||
+                (b.contains("give") && b.contains("cash to")) -> "deposit"
             b.contains("airtime") -> "airtime"
             // Paybill carries an account number; buy-goods/till does not.
             b.contains("pay bill") || b.contains("paybill") ||

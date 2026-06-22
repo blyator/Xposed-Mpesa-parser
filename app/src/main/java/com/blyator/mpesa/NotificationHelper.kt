@@ -76,8 +76,8 @@ object NotificationHelper {
             putExtra(Cat.EX_TS, timestamp)
             putExtra(Cat.EX_NOTIF_ID, notifId)
         }
-        // requestCode unique per (txn, category) so extras don't collide.
-        val reqCode = (txnId + "|" + category).hashCode()
+        // requestCode unique per (txn, category) and the timestamp so distinct txns with a null txnId don't collapse to the same code.
+        val reqCode = ((txnId ?: "ts$timestamp") + "|" + category).hashCode()
         return PendingIntent.getBroadcast(
             ctx, reqCode, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
